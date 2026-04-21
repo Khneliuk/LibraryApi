@@ -1,50 +1,56 @@
-using LibraryApi.Services;
 using Microsoft.AspNetCore.Mvc;
+using LibraryApi.Services;
+using LibraryApi.Models;
 
 namespace LibraryApi.Controllers;
-
 [ApiController]
 [Route("api/books")]
 public class BooksController : ControllerBase
 {
-    private readonly GoogleBooksService googleBooksService;
-
-    public BooksController(GoogleBooksService googleBooksService)
-    {
-        this.googleBooksService = googleBooksService;
-    }
+    private GoogleBooksService google = new();
+    private BooksStorageService storage = new();
     [HttpGet("search")]
-    public async Task<IActionResult> Search([FromQuery] string query, [FromQuery] int maxResults = 10)
+    public async Task<IActionResult> Search(string query)
     {
-        if (string.IsNullOrWhiteSpace(query))
-        {
-            return BadRequest(new { error = "Параметр query є обов'язковим" });
-        }
-
-        if (maxResults < 1 || maxResults > 40)
-        {
-            return BadRequest(new { error = "maxResults має бути від 1 до 40" });
-        }
-
-        var results = await this.googleBooksService.SearchBooksAsync(query, maxResults);
-        return Ok(new { total = results.Count, items = results });
+        var result = await google.SearchBooksAsync(query);
+        return Ok(result);
     }
-
     [HttpGet("{id}")]
     public async Task<IActionResult> GetById(string id)
     {
-        if (string.IsNullOrWhiteSpace(id))
-        {
-            return BadRequest(new { error = "ID є обов'язковим" });
-        }
-
-        var book = await this.googleBooksService.GetBookByIdAsync(id);
+        var book = await google.GetBookByIdAsync(id);
 
         if (book == null)
-        {
-            return NotFound(new { error = $"Книгу з ID '{id}' не знайдено" });
-        }
+            return NotFound();
 
         return Ok(book);
+    }
+    [HttpPost]
+    public IActionResult Create(SavedBook book)
+    {
+        storage.Add(book);
+        return StatusCode(201);
+    }
+    [HttpPut("{id}")]
+    public IActionResult Update(string id, SavedBook book)
+    {
+        var existing = storage.GetById(id);
+
+        if (existing == null)
+            return NotFound();
+
+        storage.Update(id, book);
+        return Ok();
+    }
+    [HttpDelete("{id}")]
+    public IActionResult Delete(string id)
+    {
+        var existing = storage.GetById(id);
+
+        if (existing == null)
+            return NotFound();
+
+        storage.Delete(id);
+        return NoContent();
     }
 }
