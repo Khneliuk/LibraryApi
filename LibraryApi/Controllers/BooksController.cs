@@ -36,6 +36,12 @@ public class BooksController : ControllerBase
 
         return Ok(book);
     }
+    [HttpGet("author")]
+    public async Task<IActionResult> SearchByAuthor(string author)
+    {
+        var result = await google.SearchByAuthorAsync(author);
+        return Ok(result);
+    }
     [HttpPost]
     public IActionResult Create(SavedBook book)
     {
