@@ -7,18 +7,29 @@ namespace LibraryApi.Controllers;
 [Route("api/books")]
 public class BooksController : ControllerBase
 {
-    private GoogleBooksService google = new();
-    private BooksStorageService storage = new();
+    private readonly GoogleBooksService google;
+    private readonly BooksStorageService storage;
+    public BooksController(GoogleBooksService google, BooksStorageService storage)
+    {
+        this.google = google;
+        this.storage = storage;
+    }
     [HttpGet("search")]
     public async Task<IActionResult> Search(string query)
     {
         var result = await google.SearchBooksAsync(query);
         return Ok(result);
     }
-    [HttpGet("{id}")]
-    public async Task<IActionResult> GetById(string id)
+    [HttpGet]
+    public IActionResult GetAll()
     {
-        var book = await google.GetBookByIdAsync(id);
+        var books = storage.GetAll();
+        return Ok(books);
+    }
+    [HttpGet("{id}")]
+    public IActionResult GetById(string id)
+    {
+        var book = storage.GetById(id);
 
         if (book == null)
             return NotFound();

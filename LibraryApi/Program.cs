@@ -7,6 +7,7 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddHttpClient();
 builder.Services.AddScoped<GoogleBooksService>();
+builder.Services.AddScoped<BooksStorageService>();
 
 var app = builder.Build();
 
