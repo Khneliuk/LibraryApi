@@ -5,9 +5,13 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
-builder.Services.AddHttpClient();
+builder.Services.AddHttpClient("api", client =>
+{
+    client.BaseAddress = new Uri("http://localhost:5033/");
+});
 builder.Services.AddScoped<GoogleBooksService>();
-builder.Services.AddScoped<BooksStorageService>();
+builder.Services.AddScoped<DatabaseService>();
+builder.Services.AddHostedService<TelegramBotService>();
 
 var app = builder.Build();
 

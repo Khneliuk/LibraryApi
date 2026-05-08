@@ -1,7 +1,9 @@
 namespace LibraryApi.Models;
 public class SavedBook
 {
-    public string Id { get; set; }
+    public int Id { get; set; }
     public string Title { get; set; }
-    public string Authors { get; set; }
+    public List<string> Authors { get; set; }
+    public string Status { get; set; }
+    public int Rating { get; set; }
 }

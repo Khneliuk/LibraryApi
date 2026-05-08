@@ -3,71 +3,90 @@ using LibraryApi.Services;
 using LibraryApi.Models;
 
 namespace LibraryApi.Controllers;
+
 [ApiController]
 [Route("api/books")]
 public class BooksController : ControllerBase
 {
     private readonly GoogleBooksService google;
-    private readonly BooksStorageService storage;
-    public BooksController(GoogleBooksService google, BooksStorageService storage)
+    private readonly DatabaseService database;
+
+    public BooksController(GoogleBooksService google, DatabaseService database)
     {
         this.google = google;
-        this.storage = storage;
+        this.database = database;
     }
+
     [HttpGet("search")]
     public async Task<IActionResult> Search(string query)
     {
-        var result = await google.SearchBooksAsync(query);
+        var books = await database.GetBooksAsync();
+
+        var result = books
+            .Where(b => b.Title != null &&
+                        b.Title.ToLower().Contains(query.ToLower()))
+            .ToList();
+
         return Ok(result);
     }
-    [HttpGet]
-    public IActionResult GetAll()
-    {
-        var books = storage.GetAll();
-        return Ok(books);
-    }
-    [HttpGet("{id}")]
-    public IActionResult GetById(string id)
-    {
-        var book = storage.GetById(id);
 
-        if (book == null)
-            return NotFound();
-
-        return Ok(book);
-    }
     [HttpGet("author")]
     public async Task<IActionResult> SearchByAuthor(string author)
     {
         var result = await google.SearchByAuthorAsync(author);
         return Ok(result);
     }
-    [HttpPost]
-    public IActionResult Create(SavedBook book)
+
+    [HttpGet]
+    public async Task<IActionResult> GetAll()
     {
-        storage.Add(book);
+        return Ok(await database.GetBooksAsync());
+    }
+
+    [HttpGet("{id}")]
+    public async Task<IActionResult> GetById(int id)
+    {
+        var book = await database.GetByIdAsync(id);
+
+        if (book == null)
+            return NotFound();
+
+        return Ok(book);
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> Create(SavedBook book)
+    {
+        if (book.Rating < 0 || book.Rating > 10)
+            return BadRequest("Rating must be 0–10");
+
+        await database.AddBookAsync(book);
         return StatusCode(201);
     }
+
     [HttpPut("{id}")]
-    public IActionResult Update(string id, SavedBook book)
+    public async Task<IActionResult> Update(int id, SavedBook book)
     {
-        var existing = storage.GetById(id);
+        var existing = await database.GetByIdAsync(id);
 
         if (existing == null)
             return NotFound();
 
-        storage.Update(id, book);
+        book.Id = id;
+        await database.UpdateBookAsync(book);
+
         return Ok();
     }
+
     [HttpDelete("{id}")]
-    public IActionResult Delete(string id)
+    public async Task<IActionResult> Delete(int id)
     {
-        var existing = storage.GetById(id);
+        var existing = await database.GetByIdAsync(id);
 
         if (existing == null)
             return NotFound();
 
-        storage.Delete(id);
+        await database.DeleteBookAsync(id);
         return NoContent();
     }
 }
